@@ -1,6 +1,6 @@
 import numpy as np
 from torch import nn
-from torch import  autograd
+from torch import autograd
 import torch
 from visualize import VisdomPlotter
 import os
@@ -9,19 +9,19 @@ import Image
 import scipy.misc
 import pdb
 
-class Concat_embed(nn.Module):
 
+class Concat_embed(nn.Module):
     def __init__(self, embed_dim, projected_embed_dim):
         super(Concat_embed, self).__init__()
         self.projection = nn.Sequential(
             nn.Linear(in_features=embed_dim, out_features=projected_embed_dim),
             nn.BatchNorm1d(num_features=projected_embed_dim),
             nn.LeakyReLU(negative_slope=0.2, inplace=True)
-            )
+        )
 
     def forward(self, inp, embed):
         projected_embed = self.projection(embed)
-        replicated_embed = projected_embed.repeat(4, 4, 1, 1).permute(2,  3, 0, 1)
+        replicated_embed = projected_embed.repeat(4, 4, 1, 1).permute(2, 3, 0, 1)
         hidden_concat = torch.cat([inp, replicated_embed], 1)
 
         return hidden_concat
@@ -31,7 +31,7 @@ class minibatch_discriminator(nn.Module):
     def __init__(self, num_channels, B_dim, C_dim):
         super(minibatch_discriminator, self).__init__()
         self.B_dim = B_dim
-        self.C_dim =C_dim
+        self.C_dim = C_dim
         self.num_channels = num_channels
         T_init = torch.randn(num_channels * 4 * 4, B_dim * C_dim) * 0.1
         self.T_tensor = nn.Parameter(T_init, requires_grad=True)
@@ -54,18 +54,17 @@ class minibatch_discriminator(nn.Module):
 
 
 class Utils(object):
-
     @staticmethod
     def smooth_label(tensor, offset):
         return tensor + offset
 
     @staticmethod
-
     # based on:  https://github.com/caogang/wgan-gp/blob/master/gan_cifar10.py
     def compute_GP(netD, real_data, real_embed, fake_data, LAMBDA):
         BATCH_SIZE = real_data.size(0)
         alpha = torch.rand(BATCH_SIZE, 1)
-        alpha = alpha.expand(BATCH_SIZE, int(real_data.nelement() / BATCH_SIZE)).contiguous().view(BATCH_SIZE, 3, 64, 64)
+        alpha = alpha.expand(BATCH_SIZE, int(real_data.nelement() / BATCH_SIZE)).contiguous().view(BATCH_SIZE, 3, 64,
+                                                                                                   64)
         alpha = alpha.cuda()
 
         interpolates = alpha * real_data + ((1 - alpha) * fake_data)
@@ -86,7 +85,7 @@ class Utils(object):
 
     @staticmethod
     def save_checkpoint(netD, netG, dir_path, subdir_path, epoch):
-        path =  os.path.join(dir_path, subdir_path)
+        path = os.path.join(dir_path, subdir_path)
         if not os.path.exists(path):
             os.makedirs(path)
 
@@ -148,7 +147,7 @@ class Logger(object):
         self.hist_Dx = []
         self.hist_DGx = []
 
-    def draw(self, right_images, fake_images, path = 'fake_image.jpg'):
+    def draw(self, right_images, fake_images, path='fake_image.jpg'):
         self.viz.draw('generated images', fake_images.data.cpu().numpy()[:64] * 128 + 128)
         self.viz.draw('real images', right_images.data.cpu().numpy()[:64] * 128 + 128)
 
@@ -162,12 +161,19 @@ class Logger(object):
 
         shape = generated_images.shape[1:4]
 
-        image = np.zeros((height * shape[0], width * shape[1], 3),
+        """
+        shape[0] - channels
+        shape[1] - height
+        shape[2] - width
+
+        """
+        image = np.zeros((height * shape[1], width * shape[2], shape[0]),
                          dtype=generated_images.dtype)
 
         for index, img in enumerate(generated_images):
+            img = img.transpose(1, 2, 0)
             i = int(index / width)
             j = index % width
-            image[i * shape[0]:(i + 1) * shape[0], j * shape[0]:(j + 1) * shape[1], :] = img[:, :, :]
+            image[i * shape[1]:(i + 1) * shape[1], j * shape[2]:(j + 1) * shape[2], :] = img[:, :, :]
 
         scipy.misc.imsave('Data/samples/' + path, image)
