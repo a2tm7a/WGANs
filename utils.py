@@ -5,6 +5,8 @@ import torch
 from visualize import VisdomPlotter
 import os
 import Image
+
+import scipy.misc
 import pdb
 
 class Concat_embed(nn.Module):
@@ -155,22 +157,17 @@ class Logger(object):
         generated_images = fake_images
 
         num = generated_images.shape[0]
-        width = int(np.math.sqrt(num))
-        height = int(np.math.ceil(float(num) / width))
+        height = int(np.math.sqrt(num))
+        width = int(np.math.ceil(float(num) / height))
 
-        # TODO: No color ?
-        shape = generated_images.shape[1:3]
+        shape = generated_images.shape[1:4]
 
-        # TODO: What does generated_images.dtype print. It is a array of images
-        image = np.zeros((height * shape[0], width * shape[1]),
+        image = np.zeros((height * shape[0], width * shape[1], 3),
                          dtype=generated_images.dtype)
 
         for index, img in enumerate(generated_images):
             i = int(index / width)
             j = index % width
-            image[i * shape[0]:(i + 1) * shape[0], j * shape[0]:(j + 1) * shape[1]] = img[:, :, 0]
+            image[i * shape[0]:(i + 1) * shape[0], j * shape[0]:(j + 1) * shape[1], :] = img[:, :, :]
 
-        """
-        Remove the normalisation from images
-        """
-        Image.fromarray(image.astype(np.uint8)).save(path)
+        scipy.misc.imsave('Data/samples/' + path, image)
