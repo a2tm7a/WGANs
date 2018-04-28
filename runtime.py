@@ -19,7 +19,7 @@ parser.add_argument('--dataset', default='flowers')
 parser.add_argument('--split', default=0, type=int)
 parser.add_argument('--batch_size', default=64, type=int)
 parser.add_argument('--num_workers', default=8, type=int)
-parser.add_argument('--epochs', default=200, type=int)
+parser.add_argument('--epochs', default=600, type=int)
 args = parser.parse_args()
 
 trainer = Trainer(type=args.type,

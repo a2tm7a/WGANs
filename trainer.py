@@ -82,6 +82,9 @@ class Trainer(object):
             iterator = 0
             data_iterator = iter(self.data_loader)
 
+            right_images = None
+            fake_images = None
+
             while iterator < len(self.data_loader):
 
                 if gen_iteration < 25 or gen_iteration % 500 == 0:
@@ -159,10 +162,11 @@ class Trainer(object):
 
                 gen_iteration += 1
 
-                self.logger.draw(right_images, fake_images)
+
                 self.logger.log_iteration_wgan(epoch, gen_iteration, d_loss, g_loss, real_loss, fake_loss)
-                
+
             self.logger.plot_epoch(gen_iteration)
+            self.logger.draw(right_images, fake_images, './result_images/'+str(epoch)+'_fake_images.jpg')
 
             if (epoch+1) % 50 == 0:
                 Utils.save_checkpoint(self.discriminator, self.generator, self.checkpoints_path, epoch)

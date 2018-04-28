@@ -4,6 +4,7 @@ from torch import  autograd
 import torch
 from visualize import VisdomPlotter
 import os
+import Image
 import pdb
 
 class Concat_embed(nn.Module):
@@ -103,6 +104,7 @@ class Utils(object):
 class Logger(object):
     def __init__(self, vis_screen):
         self.viz = VisdomPlotter(env_name=vis_screen)
+
         self.hist_D = []
         self.hist_G = []
         self.hist_Dx = []
@@ -124,21 +126,51 @@ class Logger(object):
         self.hist_DGx.append(fake_score.data.cpu().mean())
 
     def plot_epoch(self, epoch):
-        self.viz.plot('Discriminator', 'train', epoch, np.array(self.hist_D).mean())
-        self.viz.plot('Generator', 'train', epoch, np.array(self.hist_G).mean())
-        self.hist_D = []
-        self.hist_G = []
+        # self.viz.plot('Discriminator', 'train', epoch, np.array(self.hist_D).mean())
+        # self.viz.plot('Generator', 'train', epoch, np.array(self.hist_G).mean())
+        # self.hist_D = []
+        # self.hist_G = []
+        hist = {}
+        hist['hist_D'] = self.hist_D
+        hist['hist_G'] = self.hist_G
+        np.save('training_hist.npy', hist)
 
     def plot_epoch_w_scores(self, epoch):
         self.viz.plot('Discriminator', 'train', epoch, np.array(self.hist_D).mean())
         self.viz.plot('Generator', 'train', epoch, np.array(self.hist_G).mean())
         self.viz.plot('D(X)', 'train', epoch, np.array(self.hist_Dx).mean())
         self.viz.plot('D(G(X))', 'train', epoch, np.array(self.hist_DGx).mean())
+
         self.hist_D = []
         self.hist_G = []
         self.hist_Dx = []
         self.hist_DGx = []
 
-    def draw(self, right_images, fake_images):
+    def draw(self, right_images, fake_images, path = 'fake_image.jpg'):
         self.viz.draw('generated images', fake_images.data.cpu().numpy()[:64] * 128 + 128)
         self.viz.draw('real images', right_images.data.cpu().numpy()[:64] * 128 + 128)
+
+        fake_images = fake_images.data.cpu().numpy()[:64] * 128 + 128
+
+        generated_images = fake_images
+
+        num = generated_images.shape[0]
+        width = int(np.math.sqrt(num))
+        height = int(np.math.ceil(float(num) / width))
+
+        # TODO: No color ?
+        shape = generated_images.shape[1:3]
+
+        # TODO: What does generated_images.dtype print. It is a array of images
+        image = np.zeros((height * shape[0], width * shape[1]),
+                         dtype=generated_images.dtype)
+
+        for index, img in enumerate(generated_images):
+            i = int(index / width)
+            j = index % width
+            image[i * shape[0]:(i + 1) * shape[0], j * shape[0]:(j + 1) * shape[1]] = img[:, :, 0]
+
+        """
+        Remove the normalisation from images
+        """
+        Image.fromarray(image.astype(np.uint8)).save(path)
